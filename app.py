@@ -11,14 +11,14 @@ except:
 
 BASE_URL = "https://openrouter.ai/api/v1"
 
-# UPDATED MODEL LIST (Includes Free/Cheap options)
-# If you have $0 credit, only the "Free" ones will work.
+# --- THE FREE COUNCIL ---
+# These models are currently free to use on OpenRouter
 MODELS = {
-    "ChatGPT-4o": "openai/gpt-4o",
-    "Claude 3.5 Sonnet": "anthropic/claude-3.5-sonnet",
-    "Gemini Flash 1.5": "google/gemini-flash-1.5",  # Fixed ID
-    "Perplexity Sonar": "perplexity/sonar-reasoning", 
-    "Llama 3 (Free Mode)": "meta-llama/llama-3-8b-instruct:free", # Added a FREE model for testing
+    "Gemini 2.0 Flash": "google/gemini-2.0-flash-exp:free",
+    "Llama 3.1 8B": "meta-llama/llama-3.1-8b-instruct:free",
+    "Llama 3.2 11B": "meta-llama/llama-3.2-11b-vision-instruct:free",
+    "Phi-3 Medium": "microsoft/phi-3-medium-128k-instruct:free",
+    "Mistral 7B": "mistralai/mistral-7b-instruct:free"
 }
 
 client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
@@ -34,9 +34,6 @@ async def get_ai_response(model_name, model_id, query):
         )
         return model_name, response.choices[0].message.content
     except Exception as e:
-        # Nice error handling
-        if "402" in str(e):
-            return model_name, "⚠️ Error: Insufficient Credits. Please add $5 to OpenRouter."
         return model_name, f"Error: {str(e)}"
 
 async def get_final_conclusion(query, all_responses):
@@ -52,9 +49,9 @@ async def get_final_conclusion(query, all_responses):
     TASK: Analyze these responses. Identify the consensus and write a definitive, final conclusion.
     """
     try:
-        # Using a cheaper/free model for the conclusion to save money/ensure it works
+        # Use Gemini Flash for the conclusion (Smart & Free)
         response = await client.chat.completions.create(
-            model="meta-llama/llama-3-8b-instruct:free", # Uses free model for conclusion
+            model="google/gemini-2.0-flash-exp:free",
             messages=[{"role": "user", "content": final_prompt}]
         )
         return response.choices[0].message.content
@@ -62,9 +59,9 @@ async def get_final_conclusion(query, all_responses):
         return f"Could not generate conclusion. Error: {str(e)}"
 
 # --- MAIN APP UI ---
-st.set_page_config(page_title="Multi-AI Search", layout="wide")
-st.title("🤖 The AI Council")
-st.markdown("Ask one question. Get answers from **ChatGPT, Claude, Gemini, Perplexity, and Llama**.")
+st.set_page_config(page_title="Free AI Search", layout="wide")
+st.title("🤖 The (Free) AI Council")
+st.markdown("Ask one question. Get answers from **Gemini, Llama, Phi-3, and Mistral** (100% Free).")
 
 user_query = st.text_input("What do you want to know?")
 
