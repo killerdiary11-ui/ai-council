@@ -11,13 +11,22 @@ except:
 
 BASE_URL = "https://openrouter.ai/api/v1"
 
-# --- THE FREE COUNCIL ---
-# These models are currently free to use on OpenRouter
+# --- THE STABLE FREE COUNCIL ---
+# Using the most reliable free models currently available
 MODELS = {
+    # Confirmed Working (Google)
     "Gemini 2.0 Flash": "google/gemini-2.0-flash-exp:free",
-    "Llama 3.1 8B": "meta-llama/llama-3.1-8b-instruct:free",
-    "Llama 3.2 11B": "meta-llama/llama-3.2-11b-vision-instruct:free",
-    "Phi-3 Medium": "microsoft/phi-3-medium-128k-instruct:free",
+    
+    # Google's Thinking Model (Also Free & Smart)
+    "Gemini Thinking": "google/gemini-2.0-flash-thinking-exp:free",
+    
+    # Highly Stable Llama Version
+    "Llama 3.2 (3B)": "meta-llama/llama-3.2-3b-instruct:free",
+    
+    # Reliable Backup Model
+    "DeepSeek R1": "deepseek/deepseek-r1-distill-llama-70b:free",
+    
+    # Classic Mistral
     "Mistral 7B": "mistralai/mistral-7b-instruct:free"
 }
 
@@ -34,12 +43,15 @@ async def get_ai_response(model_name, model_id, query):
         )
         return model_name, response.choices[0].message.content
     except Exception as e:
+        # If a specific free model is down, show a clean message
+        if "404" in str(e):
+            return model_name, "⚠️ Model currently offline. Try again later."
         return model_name, f"Error: {str(e)}"
 
 async def get_final_conclusion(query, all_responses):
     context_text = ""
     for name, response in all_responses.items():
-        if "Error" not in response:
+        if "Error" not in response and "offline" not in response:
             context_text += f"\n=== {name} said: ===\n{response}\n"
 
     final_prompt = f"""
@@ -49,7 +61,7 @@ async def get_final_conclusion(query, all_responses):
     TASK: Analyze these responses. Identify the consensus and write a definitive, final conclusion.
     """
     try:
-        # Use Gemini Flash for the conclusion (Smart & Free)
+        # Use Gemini Flash for the conclusion (It's the most reliable one you have)
         response = await client.chat.completions.create(
             model="google/gemini-2.0-flash-exp:free",
             messages=[{"role": "user", "content": final_prompt}]
@@ -60,8 +72,8 @@ async def get_final_conclusion(query, all_responses):
 
 # --- MAIN APP UI ---
 st.set_page_config(page_title="Free AI Search", layout="wide")
-st.title("🤖 The (Free) AI Council")
-st.markdown("Ask one question. Get answers from **Gemini, Llama, Phi-3, and Mistral** (100% Free).")
+st.title("🤖 The (Stable) AI Council")
+st.markdown("Ask one question. Get answers from **Gemini, DeepSeek, Llama, and Mistral** (100% Free).")
 
 user_query = st.text_input("What do you want to know?")
 
@@ -83,8 +95,8 @@ if st.button("Consult the Council") and user_query:
     
     for i, (name, content) in enumerate(ai_results.items()):
         with cols[i]:
-            if "Error" in content:
-                st.error(f"**{name}**")
+            if "Error" in content or "offline" in content:
+                st.warning(f"**{name}**")
                 st.caption(content)
             else:
                 st.success(f"**{name}**")
